@@ -4,16 +4,21 @@ use strict;
 #
 # Attempt a connection to a remote host and time the response
 #
+# $Version: 1.0 $
+# $Revision: 20110328 $
+# $Source: /home/paul/scripts/tc/timeconnect $
+# $Date: 20110328 $
+
 
 use Socket;
 use FileHandle;
 use Time::HiRes;
 use Getopt::Long;
 use Pod::Usage;
-
+use Carp;
 
 my %options=();
-my $count = 1; 
+my $count = 1;
 my $iteration = 1;
 my $interval = 1;
 GetOptions(\%options,
@@ -22,20 +27,20 @@ GetOptions(\%options,
 	"count|c=i",
 	"interval|i=i"
 ) or pod2usage(2);
-pod2usage(-exitstatus => 0, -verbose => 1) if defined $options{help}; 
-pod2usage(-exitstatus => 0, -verbose => 2) if defined $options{man};
-pod2usage(-exitstatus => 0, -verbose => 0) if !defined $ARGV[0];
+if(defined $options{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
+if(defined $options{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
+if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 
-$count = $options{count} if defined $options{count};
-$interval = $options{interval} if defined $options{interval};
+if(defined $options{count}){$count = $options{count}};
+if(defined $options{interval}){$interval = $options{interval}};
 
 
 my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
 
 $| = 1;
 
-$rem_host || die "Remote host not supplied";
-$rem_port || die "Remote port not supplied";
+$rem_host || croak "Remote host not supplied";
+$rem_port || croak "Remote port not supplied";
 
 
 my $iaddr = inet_aton($rem_host);
@@ -46,10 +51,10 @@ my $fh    = FileHandle->new;
 sub checkconnect{
 	my $time1 = Time::HiRes::time;
 	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-	die "socket error";
+		croak "socket error";
 	}
 	if (!connect($fh, $paddr)) {
-		die "connect error";
+		croak "connect error";
 	}
 	$fh->autoflush(1);
 	my $elapsed = Time::HiRes::time - $time1;
@@ -60,13 +65,13 @@ sub checkconnect{
 	printf '%.2f', $milliseconds;
 	print " ms\n";
 
-## Stanza for seconds instead of milliseconds
-#	print "". localtime time, ' ',
-#		$rem_host, ':', $rem_port, "\t",
-#		inet_ntoa($iaddr), "\t";
-#	printf '%.4f', $elapsed;
-#	print " seconds\n";
-	
+	## Stanza for seconds instead of milliseconds
+	#	print "". localtime time, ' ',
+	#		$rem_host, ':', $rem_port, "\t",
+	#		inet_ntoa($iaddr), "\t";
+	#	printf '%.4f', $elapsed;
+	#	print " seconds\n";
+
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
 	if ($iteration < $count || !defined $options{count} ){
@@ -80,7 +85,7 @@ sub checkconnect{
 
 while ($iteration <= $count){
 	checkconnect();
-	if(defined($options{count})){
+	if(defined $options{count}){
 		$iteration++;
 
 	};
@@ -94,7 +99,7 @@ __END__
 
 timeconnect - times connections to TCP socket
 
-=head1 SYNOPSIS
+=head1 USAGE
 
 timeconnect [--help] [--man] [--count XX] [--interval XX] destination port
 
@@ -106,10 +111,9 @@ timeconnect www.101spares.com 80
 
 =head1 DESCRIPTION
 
-Timeconnect attempts a tcp connection to the given destination and times the
-response. The destination can be in the form of an IP address or an FQDN
+Timeconnect attempts a tcp connection to the given destination and times the response. The destination can be in the form of an IP address or an FQDN and the port must also be declared.
 
-Timeconnect will not attempt more than once per second
+The user can specify the time between attempts and the total count of connections to attempt. If these values are not specified, timeconnect will run continuously with a minimum interval of one second between attempts.
 
 =head1 ARGUMENTS
 
@@ -129,6 +133,9 @@ Timeconnect takes the following arguments:
 
 Hamish Coleman (meat) and Paul Morahan (potatoes)
 
+=head1 HISTORY
+
+Paul made the mistake of submitting a trivial change and was invited to write the potatoes instead
 
 =cut
 
