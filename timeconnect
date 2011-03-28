@@ -82,23 +82,38 @@ sub checkconnect{
 		}
 		$fh->autoflush(1);
 		my $elapsed = Time::HiRes::time - $time1;
-
+		my $milliseconds = $elapsed*1000;
 		print "". localtime time, ' ',
 			$rem_host, ':', $rem_port, "\t",
-			inet_ntoa($iaddr), "\t",
-			"$elapsed seconds\n";
+			inet_ntoa($iaddr), "\t";
+		printf '%.2f', $milliseconds;
+		print " ms\n";
 
-		# easily allow only one probe per secons
-		if ($elapsed < $interval) {
-			Time::HiRes::sleep($interval-$elapsed);
+## Stanza for seconds instead of milliseconds
+#		print "". localtime time, ' ',
+#			$rem_host, ':', $rem_port, "\t",
+#			inet_ntoa($iaddr), "\t";
+#		printf '%.4f', $elapsed;
+#		print " seconds\n";
+	
+		# easily allow only one probe per second
+		# last iteration of a limited run should not delay
+		if ($iteration < $count || !defined $options{count} ){
+			if ($elapsed < $interval) {
+				Time::HiRes::sleep($interval-$elapsed);
+			}
 		}
+
 }
+
 
 while ($iteration <= $count){
 	checkconnect();
 	if(defined($options{count})){
 		$iteration++;
+
 	};
+
 };
 
 
