@@ -9,6 +9,7 @@ use Socket;
 use FileHandle;
 use Time::HiRes;
 use Getopt::Long;
+use Pod::Usage;
 
 
 my %options=();
@@ -16,42 +17,17 @@ my $count = 1;
 my $iteration = 1;
 my $interval = 1;
 GetOptions(\%options,
-	"help|h",
+	"help|h|?",
+	"man",
 	"count|c=i",
 	"interval|i=i"
-);
+) or pod2usage(2);
+pod2usage(-exitstatus => 0, -verbose => 1) if defined $options{help}; 
+pod2usage(-exitstatus => 0, -verbose => 2) if defined $options{man};
+pod2usage(-exitstatus => 0, -verbose => 0) if !defined $ARGV[0];
 
 $count = $options{count} if defined $options{count};
 $interval = $options{interval} if defined $options{interval};
-
-if(defined($options{help}) || !defined $ARGV[0]) {
-print <<EOF;
-
-Timeconnect attempts a tcp connection to the given destination and times the
-response. The destination can be in the form of an IP address or an FQDN
-
-Timeconnect will not attempt more than once per second
-
-Usage:
-	timeconnect [-h] [-c count] [-i interval] destination port
-	timeconnect -c 20 192.168.1.1 80
-	timeconnect www.101spares.com 80
-
-	--help calls this usage page
-	--count will repeat for the given number of iterations. 
-	--interval changes the interval between the attempts to X seconds
-EOF
-exit 0;
-}
-
-
-## debugging
-#print "Recurse is set to $count\n";
-#print "-r $options{r}\n" if defined $options{r};
-#print "-R $options{R}\n" if defined $options{R};
-
-#$count = $options{r} if defined $options{r};
-#$count = 0 if defined $options{R}; # if both are called, R takes precedence
 
 
 my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
@@ -113,6 +89,48 @@ while ($iteration <= $count){
 
 
 0;
+__END__
+=head1 NAME
+
+timeconnect - times connections to TCP socket
+
+=head1 SYNOPSIS
+
+timeconnect [--help] [--man] [--count XX] [--interval XX] destination port
+
+timeconnect [-h] [-c XX] [-i XX] destination port
+
+timeconnect -c 20 192.168.1.1 80
+
+timeconnect www.101spares.com 80
+
+=head1 DESCRIPTION
+
+Timeconnect attempts a tcp connection to the given destination and times the
+response. The destination can be in the form of an IP address or an FQDN
+
+Timeconnect will not attempt more than once per second
+
+=head1 ARGUMENTS
+
+Timeconnect takes the following arguments:
+
+=over 4
+
+=item B<--count, -c> Repeats the connection test for COUNT attempts. If this value is not specified, timeconnect will run continuously
+
+=item B<--help, -h>	Displays the usage message
+
+=item B<--interval, -i>	Sets the interval in seconds between connection tests. If this value is not specified, timeconnect will default to an interval of 1.
+
+=back
+
+=head1 AUTHOR
+
+Hamish Coleman (meat) and Paul Morahan (potatoes)
+
+
+=cut
 
 
 
