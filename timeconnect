@@ -33,9 +33,9 @@ response. The destination can be in the form of an IP address or an FQDN
 Timeconnect will not attempt more than once per second
 
 Usage:
-	timeconnect [-ch] [count]  destination port
+	timeconnect [-h] [-c count] [-i interval] destination port
 	timeconnect -c 20 192.168.1.1 80
-	timeconnect www.101spares.com
+	timeconnect www.101spares.com 80
 
 	--help calls this usage page
 	--count will repeat for the given number of iterations. 
@@ -58,11 +58,6 @@ my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
 
 $| = 1;
 
-if(defined($options{r})) {
-		if ($options{r} == int($options{r}) && $options{r} > -1){} else {
-			die "Recurse switch called without an integer >= 0";
-		};
-};
 $rem_host || die "Remote host not supplied";
 $rem_port || die "Remote port not supplied";
 
@@ -70,40 +65,40 @@ $rem_port || die "Remote port not supplied";
 my $iaddr = inet_aton($rem_host);
 my $paddr = sockaddr_in($rem_port, $iaddr);
 my $proto = getprotobyname('tcp');
-my $fh    = new FileHandle;
+my $fh    = FileHandle->new;
 
 sub checkconnect{
-		my $time1 = Time::HiRes::time;
-		if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-		die "socket error";
-		}
-		if (!connect($fh, $paddr)) {
-			die "connect error";
-		}
-		$fh->autoflush(1);
-		my $elapsed = Time::HiRes::time - $time1;
-		my $milliseconds = $elapsed*1000;
-		print "". localtime time, ' ',
-			$rem_host, ':', $rem_port, "\t",
-			inet_ntoa($iaddr), "\t";
-		printf '%.2f', $milliseconds;
-		print " ms\n";
+	my $time1 = Time::HiRes::time;
+	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
+	die "socket error";
+	}
+	if (!connect($fh, $paddr)) {
+		die "connect error";
+	}
+	$fh->autoflush(1);
+	my $elapsed = Time::HiRes::time - $time1;
+	my $milliseconds = $elapsed*1000;
+	print "". localtime time, ' ',
+		$rem_host, ':', $rem_port, "\t",
+		inet_ntoa($iaddr), "\t";
+	printf '%.2f', $milliseconds;
+	print " ms\n";
 
 ## Stanza for seconds instead of milliseconds
-#		print "". localtime time, ' ',
-#			$rem_host, ':', $rem_port, "\t",
-#			inet_ntoa($iaddr), "\t";
-#		printf '%.4f', $elapsed;
-#		print " seconds\n";
+#	print "". localtime time, ' ',
+#		$rem_host, ':', $rem_port, "\t",
+#		inet_ntoa($iaddr), "\t";
+#	printf '%.4f', $elapsed;
+#	print " seconds\n";
 	
-		# easily allow only one probe per second
-		# last iteration of a limited run should not delay
-		if ($iteration < $count || !defined $options{count} ){
-			if ($elapsed < $interval) {
-				Time::HiRes::sleep($interval-$elapsed);
-			}
+	# easily allow only one probe per second
+	# last iteration of a limited run should not delay return to prompt
+	if ($iteration < $count || !defined $options{count} ){
+		if ($elapsed < $interval) {
+			Time::HiRes::sleep($interval-$elapsed);
 		}
-
+	};
+	return;
 }
 
 
