@@ -12,9 +12,10 @@ use Getopt::Std;
 
 
 my %options=();
-getopts("hRr:", \%options);
-my $recurse = 1; # target number for iterations, 0 = don't stop
+getopts("hc:", \%options);
+my $count = 1; # target number for iterations, 0 = don't stop
 my $iteration = 1;
+$count = $options{c} if defined $options{c};
 
 if(defined($options{h})){
 print <<EOF;
@@ -40,12 +41,12 @@ exit 0;
 
 
 ## debugging
-#print "Recurse is set to $recurse\n";
+#print "Recurse is set to $count\n";
 #print "-r $options{r}\n" if defined $options{r};
 #print "-R $options{R}\n" if defined $options{R};
 
-$recurse = $options{r} if defined $options{r};
-$recurse = 0 if defined $options{R}; # if both are called, R takes precedence
+#$count = $options{r} if defined $options{r};
+#$count = 0 if defined $options{R}; # if both are called, R takes precedence
 
 
 my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
@@ -66,23 +67,10 @@ my $paddr = sockaddr_in($rem_port, $iaddr);
 my $proto = getprotobyname('tcp');
 my $fh    = new FileHandle;
 
-
-while ($iteration > $recurse){
-	&checkconnect();
-};
-
-while ($iteration <= $recurse){
-	&checkconnect();
-	$iteration++;
-};
-
-0;
-
-
 sub checkconnect{
 		my $time1 = Time::HiRes::time;
 		if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-			die "socket error";
+		die "socket error";
 		}
 		if (!connect($fh, $paddr)) {
 			die "connect error";
@@ -100,4 +88,24 @@ sub checkconnect{
 			Time::HiRes::sleep(1-$elapsed);
 		}
 }
+
+while ($iteration <= $count){
+	checkconnect();
+	if(defined($options{c})){
+		$iteration++;
+	};
+};
+
+#while ($iteration > $count){
+#	checkconnect();
+#};
+#
+#while ($iteration <= $count){
+#	checkconnect();
+#	$iteration++;
+#};
+
+0;
+
+
 
