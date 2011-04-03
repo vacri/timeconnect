@@ -4,11 +4,8 @@ use strict;
 #
 # Attempt a connection to a remote host and time the response
 #
-# $Version: 1.0 $
-# $Revision: 20110328 $
-# $Source: /home/paul/scripts/tc/timeconnect $
-# $Date: 20110328 $
 
+our $VERSION="1.0";
 
 use Socket;
 use FileHandle;
@@ -16,28 +13,43 @@ use Time::HiRes;
 use Getopt::Long;
 use Pod::Usage;
 use Carp;
+use English;
 
-my %options=();
-my $count = 1;
-my $iteration = 1;
-my $interval = 1;
-GetOptions(\%options,
+my $options={
+	count => 0,
+	interval => 1
+};
+GetOptions($options,
 	"help|h|?",
 	"man",
 	"count|c=i",
 	"interval|i=i"
 ) or pod2usage(2);
-if(defined $options{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
-if(defined $options{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
+if(defined $options->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
+if(defined $options->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
 if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 
-if(defined $options{count}){$count = $options{count}};
-if(defined $options{interval}){$interval = $options{interval}};
+my $count = $options->{count};
+#I couldn't think of any other way to find out if 'count' had been /explictly/
+#called from the commandline. '--count 1' is a valid request and assuming it as
+#a special case screws that up (and causes silly maths during the incrementation
+#process). This was previously set by 'if defined' but since we're explicitly
+#defining it above, can no longer use that.
+my $repeat = 0;
+if($count == 0){
+	$repeat = 1;
+	$count = 1;
+};
+my $interval = $options->{interval};
+my $iteration = 1;
 
+#print "repeat = $repeat \n";
+#print "count = $count \n";
+#print "iteration = $iteration \n";
 
 my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
 
-$| = 1;
+$OUTPUT_AUTOFLUSH=1;
 
 $rem_host || croak "Remote host not supplied";
 $rem_port || croak "Remote port not supplied";
@@ -74,20 +86,19 @@ sub checkconnect{
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
-	if ($iteration < $count || !defined $options{count} ){
+	if ($iteration < $count || $repeat == 1){
 		if ($elapsed < $interval) {
 			Time::HiRes::sleep($interval-$elapsed);
-		}
+		};
 	};
 	return;
-}
+};
 
 
 while ($iteration <= $count){
 	checkconnect();
-	if(defined $options{count}){
+	if($repeat == 0){
 		$iteration++;
-
 	};
 
 };
