@@ -50,11 +50,6 @@ my $rem_port = $options->{port};
 
 $OUTPUT_AUTOFLUSH=1;
 
-## defunct
-#$rem_host || croak "Remote host not supplied";
-#$rem_port || croak "Remote port not supplied";
-
-
 my $iaddr = inet_aton($rem_host);
 my $paddr = sockaddr_in($rem_port, $iaddr);
 my $proto = getprotobyname('tcp');
@@ -63,13 +58,11 @@ my $fh    = FileHandle->new;
 sub checkconnect{
 	my $time1 = Time::HiRes::time;
 	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-#		croak "socket error";
 		printf "%s $rem_host:$rem_port\t%s\tsocket error\n",
 		"". localtime time, inet_ntoa($iaddr);
 		return 0;
 	}
 	if (!connect($fh, $paddr)) {
-#		croak "connect error";
 		printf "%s $rem_host:$rem_port\t%s\tconnect error\n",
 		"". localtime time, inet_ntoa($iaddr);
 		return 0;
@@ -77,7 +70,6 @@ sub checkconnect{
 	$fh->autoflush(1);
 	my $delay = Time::HiRes::time - $time1;
 	my $milliseconds = $delay*1000;
-	# the "". part changes the output of localtime
 	printf "%s $rem_host:$rem_port\t%s\t%.3g ms\n",
 		"". localtime time, inet_ntoa($iaddr), $milliseconds;
 
