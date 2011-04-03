@@ -17,13 +17,15 @@ use English;
 
 my $options={
 	count => 0,
-	interval => 1
+	interval => 1,
+	port => 80
 };
 GetOptions($options,
 	"help|h|?",
 	"man",
 	"count|c=i",
-	"interval|i=i"
+	"interval|i=i",
+	"port|p=i"
 ) or pod2usage(2);
 if(defined $options->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if(defined $options->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
@@ -45,10 +47,10 @@ my $iteration = 1;
 
 
 
-my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
+my $rem_host = $ARGV[0];
+my $rem_port = $options->{port};
 
 $OUTPUT_AUTOFLUSH=1;
-
 
 $rem_host || croak "Remote host not supplied";
 $rem_port || croak "Remote port not supplied";
@@ -73,14 +75,6 @@ sub checkconnect{
 	# the "". part changes the output of localtime
 	printf "%s $rem_host:$rem_port\t%s\t%.3g ms\n",
 		"". localtime time, inet_ntoa($iaddr), $milliseconds;
-
-	## Stanza for seconds instead of milliseconds
-	## also format before munging it all into one printf
-	#	print "". localtime time, ' ',
-	#		$rem_host, ':', $rem_port, "\t",
-	#		inet_ntoa($iaddr), "\t";
-	#	printf '%.4f', $elapsed;
-	#	print " seconds\n";
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
@@ -110,13 +104,13 @@ timeconnect - times connections to TCP socket
 
 =head1 USAGE
 
-timeconnect [--help] [--man] [--count XX] [--interval XX] destination port
+timeconnect [--help] [--man] [--count X] [--interval X] [--port X] destination
 
-timeconnect [-h] [-c XX] [-i XX] destination port
+timeconnect [-h] [-c X] [-i X] [-p X] destination 
 
-timeconnect -c 20 192.168.1.1 80
+timeconnect -c 20 -i 3 -p 80 192.168.1.1
 
-timeconnect www.101spares.com 80
+timeconnect www.101spares.com
 
 =head1 DESCRIPTION
 
@@ -135,6 +129,8 @@ Timeconnect takes the following arguments:
 =item B<--help, -h>	Displays the usage message
 
 =item B<--interval, -i>	Sets the interval in seconds between connection tests. If this value is not specified, timeconnect will default to an interval of 1.
+
+=item B<--port, -p> Sets the destination port to use. If this value is not specificed, timeconnect will default to a port of 80 (standard http)
 
 =back
 
