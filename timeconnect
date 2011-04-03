@@ -13,7 +13,7 @@ use Time::HiRes;
 use Getopt::Long;
 use Pod::Usage;
 use Carp;
-use English;
+use English qw( -no_match_vars );
 
 #if count isn't explicitly 0 here, the script works, but perl bitches later
 my $options={
