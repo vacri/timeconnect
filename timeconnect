@@ -43,13 +43,12 @@ if($count == 0){
 my $interval = $options->{interval};
 my $iteration = 1;
 
-#print "repeat = $repeat \n";
-#print "count = $count \n";
-#print "iteration = $iteration \n";
+
 
 my ($rem_host, $rem_port) = ($ARGV[0], $ARGV[1]);
 
 $OUTPUT_AUTOFLUSH=1;
+
 
 $rem_host || croak "Remote host not supplied";
 $rem_port || croak "Remote port not supplied";
@@ -71,13 +70,12 @@ sub checkconnect{
 	$fh->autoflush(1);
 	my $elapsed = Time::HiRes::time - $time1;
 	my $milliseconds = $elapsed*1000;
-	print "". localtime time, ' ',
-		$rem_host, ':', $rem_port, "\t",
-		inet_ntoa($iaddr), "\t";
-	printf '%.2f', $milliseconds;
-	print " ms\n";
+	# the "". part changes the output of localtime
+	printf "%s $rem_host:$rem_port\t%s\t%.3g ms\n",
+		"". localtime time, inet_ntoa($iaddr), $milliseconds;
 
 	## Stanza for seconds instead of milliseconds
+	## also format before munging it all into one printf
 	#	print "". localtime time, ' ',
 	#		$rem_host, ':', $rem_port, "\t",
 	#		inet_ntoa($iaddr), "\t";
