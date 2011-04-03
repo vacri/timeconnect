@@ -15,6 +15,7 @@ use Pod::Usage;
 use Carp;
 use English;
 
+#if count isn't explicitly 0 here, the script works, but perl bitches later
 my $options={
 	count => 0,
 	interval => 1,
@@ -27,23 +28,20 @@ GetOptions($options,
 	"interval|i=i",
 	"port|p=i"
 ) or pod2usage(2);
-if(defined $options->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
-if(defined $options->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
+if($options->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
+if($options->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
 if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 
+my $interval = $options->{interval};
+my $iteration = 1;
+
+## detect if a count switch was explicitly given
 my $count = $options->{count};
-#I couldn't think of any other way to find out if 'count' had been /explictly/
-#called from the commandline. '--count 1' is a valid request and assuming it as
-#a special case screws that up (and causes silly maths during the incrementation
-#process). This was previously set by 'if defined' but since we're explicitly
-#defining it above, can no longer use that.
 my $repeat = 0;
 if($count == 0){
 	$repeat = 1;
 	$count = 1;
 };
-my $interval = $options->{interval};
-my $iteration = 1;
 
 
 
@@ -52,8 +50,9 @@ my $rem_port = $options->{port};
 
 $OUTPUT_AUTOFLUSH=1;
 
-$rem_host || croak "Remote host not supplied";
-$rem_port || croak "Remote port not supplied";
+## defunct
+#$rem_host || croak "Remote host not supplied";
+#$rem_port || croak "Remote port not supplied";
 
 
 my $iaddr = inet_aton($rem_host);
@@ -64,18 +63,30 @@ my $fh    = FileHandle->new;
 sub checkconnect{
 	my $time1 = Time::HiRes::time;
 	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-		croak "socket error";
+#		croak "socket error";
+		printf "%s $rem_host:$rem_port\t%s\tsocket error\n",
+		"". localtime time, inet_ntoa($iaddr);
+		return 0;
 	}
 	if (!connect($fh, $paddr)) {
-		croak "connect error";
+#		croak "connect error";
+		printf "%s $rem_host:$rem_port\t%s\tconnect error\n",
+		"". localtime time, inet_ntoa($iaddr);
+		return 0;
 	}
 	$fh->autoflush(1);
-	my $elapsed = Time::HiRes::time - $time1;
-	my $milliseconds = $elapsed*1000;
+	my $delay = Time::HiRes::time - $time1;
+	my $milliseconds = $delay*1000;
 	# the "". part changes the output of localtime
 	printf "%s $rem_host:$rem_port\t%s\t%.3g ms\n",
 		"". localtime time, inet_ntoa($iaddr), $milliseconds;
 
+	return $delay;
+};
+
+while ($iteration <= $count){
+	my $elapsed = checkconnect();
+	
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
 	if ($iteration < $count || $repeat == 1){
@@ -83,12 +94,7 @@ sub checkconnect{
 			Time::HiRes::sleep($interval-$elapsed);
 		};
 	};
-	return;
-};
-
-
-while ($iteration <= $count){
-	checkconnect();
+	
 	if($repeat == 0){
 		$iteration++;
 	};
