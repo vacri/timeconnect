@@ -15,9 +15,7 @@ use Pod::Usage;
 use Carp;
 use English qw( -no_match_vars );
 
-#if count isn't explicitly 0 here, the script works, but perl bitches later
 my $options={
-	count => 0,
 	interval => 1,
 	port => 80
 };
@@ -32,18 +30,11 @@ if($options->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if($options->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
 if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 
-my $interval = $options->{interval};
-my $iteration = 1;
-
-## detect if a count switch was explicitly given
-my $count = $options->{count};
 my $repeat = 0;
-if($count == 0){
+if(!defined $options->{count}){
 	$repeat = 1;
-	$count = 1;
+	$options->{count} = 1;
 };
-
-
 
 my $rem_host = $ARGV[0];
 my $rem_port = $options->{port};
@@ -58,37 +49,41 @@ my $fh    = FileHandle->new;
 sub checkconnect{
 	my $time1 = Time::HiRes::time;
 	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-		printf "%s $rem_host:$rem_port\t%s\tsocket error\n",
-		"". localtime time, inet_ntoa($iaddr);
+		printf "%s %s:%d\t%s\tsocket error\n",
+		"". localtime time, $rem_host, $rem_port,
+		inet_ntoa($iaddr);
 		return 0;
 	}
 	if (!connect($fh, $paddr)) {
-		printf "%s $rem_host:$rem_port\t%s\tconnect error\n",
-		"". localtime time, inet_ntoa($iaddr);
+		printf "%s %s:%d\t%s\tconnect error\n",
+		"". localtime time, $rem_host, $rem_port,
+		inet_ntoa($iaddr);
 		return 0;
 	}
 	$fh->autoflush(1);
 	my $delay = Time::HiRes::time - $time1;
 	my $milliseconds = $delay*1000;
-	printf "%s $rem_host:$rem_port\t%s\t%.3g ms\n",
-		"". localtime time, inet_ntoa($iaddr), $milliseconds;
+	printf "%s %s:%d\t%s\t%.3g ms\n",
+		"". localtime time, $rem_host, $rem_port, 
+		inet_ntoa($iaddr), $milliseconds;
 
 	return $delay;
 };
 
-while ($iteration <= $count){
+my $i = 1;
+while ($i <= $options->{count}){
 	my $elapsed = checkconnect();
 	
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
-	if ($iteration < $count || $repeat == 1){
-		if ($elapsed < $interval) {
-			Time::HiRes::sleep($interval-$elapsed);
+	if ($i < $options->{count} || $repeat == 1){
+		if ($elapsed < $options->{interval}) {
+			Time::HiRes::sleep($options->{interval}-$elapsed);
 		};
 	};
 	
 	if($repeat == 0){
-		$iteration++;
+		$i++;
 	};
 
 };
