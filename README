@@ -1,0 +1,5 @@
+Timeconnect is a perl script designed to repeatedly test for a tcp connection to a remote host. It is intended to behave similarly to ping, except that it requests a TCP socket instead of perfoming a straight ping.
+
+For usage information, use timeconnect '--man'
+
+Timeconnect started out as a simpler script for the first author, but then transmogrified into a training vessel for the second author.
