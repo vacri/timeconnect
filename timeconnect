@@ -38,12 +38,11 @@ if(!defined $option->{count}){
 };
 
 my $rem_host = $ARGV[0];
-my $rem_port = $option->{port};
 
 $OUTPUT_AUTOFLUSH=1;
 
 my $iaddr = inet_aton($rem_host);
-my $paddr = sockaddr_in($rem_port, $iaddr);
+my $paddr = sockaddr_in($option->{port}, $iaddr);
 my $proto = getprotobyname('tcp');
 my $fh    = FileHandle->new;
 
@@ -72,7 +71,7 @@ while ($i <= $option->{count}){
 	my $milliseconds = $elapsed*1000;
 
 	printf "%s %s:%d\t%s\t",
-		"". localtime time, $rem_host, $rem_port,
+		"". localtime time, $rem_host, $option->{port},
 		inet_ntoa($iaddr);
 	switch ($connstat) {
 		case 0	{ printf "%.3g ms\n", $milliseconds}
