@@ -14,7 +14,7 @@ use Getopt::Long;
 use Pod::Usage;
 use Carp;
 use English qw( -no_match_vars );
-use Switch;
+use Switch 'Perl 6';
 
 my $option={
 	interval => 1,
@@ -73,11 +73,11 @@ while ($i <= $option->{count}){
 	printf "%s %s:%d\t%s\t",
 		"". localtime time, $rem_host, $option->{port},
 		inet_ntoa($iaddr);
-	switch ($connstat) {
-		case 0	{ printf "%.3g ms\n", $milliseconds}
-		case 1	{ print "socket error\n"}
-		case 2	{ print "connect error\n"}
-		else	{ print "script error\n"}
+	given ($connstat) {
+		when 0 { printf "%.3g ms\n", $milliseconds}
+		when 1 { print "socket error\n"}
+		when 2 { print "connect error\n"}
+		else { print "script error\n"}
 	};
 	
 	# easily allow only one probe per second
