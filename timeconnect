@@ -14,30 +14,31 @@ use Getopt::Long;
 use Pod::Usage;
 use Carp;
 use English qw( -no_match_vars );
+use Switch;
 
-my $options={
+my $option={
 	interval => 1,
 	port => 80
 };
-GetOptions($options,
+GetOptions($option,
 	"help|h|?",
 	"man",
 	"count|c=i",
 	"interval|i=i",
 	"port|p=i"
 ) or pod2usage(2);
-if($options->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
-if($options->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
+if($option->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
+if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
 if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 
 my $repeat = 0;
-if(!defined $options->{count}){
+if(!defined $option->{count}){
 	$repeat = 1;
-	$options->{count} = 1;
+	$option->{count} = 1;
 };
 
 my $rem_host = $ARGV[0];
-my $rem_port = $options->{port};
+my $rem_port = $option->{port};
 
 $OUTPUT_AUTOFLUSH=1;
 
@@ -47,41 +48,47 @@ my $proto = getprotobyname('tcp');
 my $fh    = FileHandle->new;
 
 sub checkconnect{
-	my $time1 = Time::HiRes::time;
+	# check for local socket
 	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-		printf "%s %s:%d\t%s\tsocket error\n",
-		"". localtime time, $rem_host, $rem_port,
-		inet_ntoa($iaddr);
-		return 0;
+		return 1;
 	}
+	# check for remote socket
 	if (!connect($fh, $paddr)) {
-		printf "%s %s:%d\t%s\tconnect error\n",
-		"". localtime time, $rem_host, $rem_port,
-		inet_ntoa($iaddr);
-		return 0;
+		return 2;
 	}
-	$fh->autoflush(1);
-	my $delay = Time::HiRes::time - $time1;
-	my $milliseconds = $delay*1000;
-	printf "%s %s:%d\t%s\t%.3g ms\n",
-		"". localtime time, $rem_host, $rem_port, 
-		inet_ntoa($iaddr), $milliseconds;
-
-	return $delay;
+	return 0;
 };
 
+
 my $i = 1;
-while ($i <= $options->{count}){
-	my $elapsed = checkconnect();
+while ($i <= $option->{count}){
+	my $time1 = Time::HiRes::time;
+	
+	my $connstat = checkconnect();
+
+	$fh->autoflush(1);
+
+	my $elapsed = Time::HiRes::time - $time1;
+	my $milliseconds = $elapsed*1000;
+
+	printf "%s %s:%d\t%s\t",
+		"". localtime time, $rem_host, $rem_port,
+		inet_ntoa($iaddr);
+	switch ($connstat) {
+		case 0	{ printf "%.3g ms\n", $milliseconds}
+		case 1	{ print "socket error\n"}
+		case 2	{ print "connect error\n"}
+		else	{ print "script error\n"}
+	};
 	
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
-	if ($i < $options->{count} || $repeat == 1){
-		if ($elapsed < $options->{interval}) {
-			Time::HiRes::sleep($options->{interval}-$elapsed);
+	if ($i < $option->{count} || $repeat == 1){
+		if ($elapsed < $option->{interval}) {
+			Time::HiRes::sleep($option->{interval}-$elapsed);
 		};
 	};
-	
+
 	if($repeat == 0){
 		$i++;
 	};
