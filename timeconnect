@@ -61,12 +61,11 @@ sub checkconnect{
 
 
 my $i = 1;
-my $si = 0; # 'stats iteration'
 my $totalwait = 0;
 my $received = 0;
 my $min = 0;
 my $max = 0;
-while ($i <= $option->{count}){
+while (!defined $option->{count} || $i <= $option->{count}){
 	my $time1 = Time::HiRes::time;
 	
 	my $connstat = checkconnect();
@@ -94,14 +93,11 @@ while ($i <= $option->{count}){
 		};
 	};
 
-	if($repeat == 0){
-		$i++;
-	};
+	$i++;
 	
 	# rudimentary stats 
 	# plan to streamline vars and fix bugs later
 	# assumptions include: first connect is successful ($min/$max)
-	$si++;
 	if($connstat == 0){
 		$totalwait = $totalwait + $elapsed;
 		$received++;
@@ -112,19 +108,18 @@ while ($i <= $option->{count}){
 			$max = $elapsed;
 		};
 	};
-	if ($i > $option->{count} && $repeat == 0){
-		my $ave = 1000*($totalwait / $si);
-		my $pcfail = 100*(($si-$received) / $si);
-		$min = 1000*$min; # milliseconds
-		$max = 1000*$max; # milliseconds
-		print "--- $rem_host timeconnect statistics ---\n";
-		printf "%d attempts, %d connects, %d%% failed\n",
-		$si, $received, $pcfail;
-		printf "min/avg/max = %.3g/%.3g/%.3g ms\n",
-		$min, $ave, $max;
-	};
 };
 
+# print end-of-run statistics
+my $ave = 1000*($totalwait / $i);
+my $pcfail = 100*(($i-$received) / $i);
+$min = 1000*$min; # milliseconds
+$max = 1000*$max; # milliseconds
+print "--- $rem_host timeconnect statistics ---\n";
+printf "%d attempts, %d connects, %d%% failed\n",
+	$i, $received, $pcfail;
+printf "min/avg/max = %.3g/%.3g/%.3g ms\n",
+	$min, $ave, $max;
 
 0;
 __END__
