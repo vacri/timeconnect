@@ -66,6 +66,7 @@ my $received = 0;
 my $min = 0;
 my $max = 0;
 while (!defined $option->{count} || $i <= $option->{count}){
+	i++
 	my $time1 = Time::HiRes::time;
 	
 	my $connstat = checkconnect();
@@ -87,13 +88,12 @@ while (!defined $option->{count} || $i <= $option->{count}){
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
-	if ($i < $option->{count} || $repeat == 1){
+	if ($i <= $option->{count} || $repeat == 1){
 		if ($elapsed < $option->{interval}) {
 			Time::HiRes::sleep($option->{interval}-$elapsed);
 		};
 	};
 
-	$i++;
 	
 	# rudimentary stats 
 	# plan to streamline vars and fix bugs later
@@ -101,12 +101,8 @@ while (!defined $option->{count} || $i <= $option->{count}){
 	if($connstat == 0){
 		$totalwait = $totalwait + $elapsed;
 		$received++;
-		if($elapsed < $min || $si == 1){
-			$min = $elapsed;
-		};
-		if($elapsed > $max || $si == 1){
-			$max = $elapsed;
-		};
+		if($elapsed < $min || $si == 1){ $min = $elapsed; };
+		if($elapsed > $max || $si == 1){ $max = $elapsed; };
 	};
 };
 
@@ -118,8 +114,8 @@ $max = 1000*$max; # milliseconds
 print "--- $rem_host timeconnect statistics ---\n";
 printf "%d attempts, %d connects, %d%% failed\n",
 	$i, $received, $pcfail;
-printf "min/avg/max = %.3g/%.3g/%.3g ms\n",
-	$min, $ave, $max;
+printf "min/max/avg = %.3g/%.3g/%.3g ms\n",
+	$min, $max, $avg;
 
 0;
 __END__
