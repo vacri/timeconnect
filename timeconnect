@@ -5,7 +5,7 @@ use strict;
 # Attempt a connection to a remote host and time the response
 #
 
-our $VERSION="1.1";
+our $VERSION=1.1;
 
 use Socket;
 use FileHandle;
@@ -21,11 +21,11 @@ my $option={
 	port => 80
 };
 GetOptions($option,
-	help|h|?,
-	man,
-	count|c=i,
-	interval|i=i,
-	port|p=i
+	"help|h|?",
+	"man",
+	"count|c=i",
+	"interval|i=i",
+	"port|p=i"
 ) or pod2usage(2);
 if($option->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
