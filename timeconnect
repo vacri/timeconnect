@@ -5,7 +5,7 @@ use strict;
 # Attempt a connection to a remote host and time the response
 #
 
-our $VERSION="1.0";
+our $VERSION="1.1";
 
 use Socket;
 use FileHandle;
@@ -15,7 +15,6 @@ use Pod::Usage;
 use Carp;
 use English qw( -no_match_vars );
 use Switch 'Perl 6';
-#use feature "switch";
 
 my $option={
 	interval => 1,
@@ -59,14 +58,14 @@ sub checkconnect{
 	return 0;
 };
 
-
-my $i = 1;
+# Statistics vars
 my $totalwait = 0;
 my $received = 0;
 my $min = 0;
 my $max = 0;
-while (!defined $option->{count} || $i <= $option->{count}){
-	i++
+
+my $i = 0;
+while (!defined $option->{count} || $i < $option->{count}){
 	my $time1 = Time::HiRes::time;
 	
 	my $connstat = checkconnect();
@@ -85,29 +84,26 @@ while (!defined $option->{count} || $i <= $option->{count}){
 		when 2 { print "connect error\n";}
 		else { print "script error\n";}
 	};
+	
+	if($connstat == 0){
+		$totalwait = $totalwait + $elapsed;
+		$received++;
+		if($elapsed < $min || $i == 2){ $min = $elapsed; };
+		if($elapsed > $max || $i == 2){ $max = $elapsed; };
+	};
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay return to prompt
-	if ($i <= $option->{count} || $repeat == 1){
+	if ($i < $option->{count} || $repeat == 1){
 		if ($elapsed < $option->{interval}) {
 			Time::HiRes::sleep($option->{interval}-$elapsed);
 		};
 	};
-
-	
-	# rudimentary stats 
-	# plan to streamline vars and fix bugs later
-	# assumptions include: first connect is successful ($min/$max)
-	if($connstat == 0){
-		$totalwait = $totalwait + $elapsed;
-		$received++;
-		if($elapsed < $min || $si == 1){ $min = $elapsed; };
-		if($elapsed > $max || $si == 1){ $max = $elapsed; };
-	};
+	$i++;
 };
 
 # print end-of-run statistics
-my $ave = 1000*($totalwait / $i);
+my $avg = 1000*($totalwait / $i);
 my $pcfail = 100*(($i-$received) / $i);
 $min = 1000*$min; # milliseconds
 $max = 1000*$max; # milliseconds
