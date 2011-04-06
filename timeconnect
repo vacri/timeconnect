@@ -21,11 +21,11 @@ my $option={
 	port => 80
 };
 GetOptions($option,
-	"help|h|?",
-	"man",
-	"count|c=i",
-	"interval|i=i",
-	"port|p=i"
+	help|h|?,
+	man,
+	count|c=i,
+	interval|i=i,
+	port|p=i
 ) or pod2usage(2);
 if($option->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
@@ -68,7 +68,7 @@ my $runstarttime = time;
 my $i = 0;
 while (!defined $option->{count} || $i < $option->{count}){
 	my $time1 = Time::HiRes::time;
-	
+
 	my $connstat = checkconnect();
 
 	$fh->autoflush(1);
@@ -96,7 +96,7 @@ while (!defined $option->{count} || $i < $option->{count}){
 	$i++;
 
 	# easily allow only one probe per second
-	# last iteration of a limited run should not delay return to prompt
+	# last iteration of a limited run should not delay prompt
 	if ($i < $option->{count} || $repeat == 1){
 		if ($elapsed < $option->{interval}) {
 			Time::HiRes::sleep($option->{interval}-$elapsed);
@@ -111,7 +111,7 @@ my $pcfail = 100*(($i-$received) / $i);
 $min = 1000*$min; # milliseconds
 $max = 1000*$max; # milliseconds
 print "--- $rem_host timeconnect statistics ---\n";
-printf "%d attempts, %d connects, %d%% failed, total run time %3g sec\n",
+printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
 	$i, $received, $pcfail, ($runstoptime - $runstarttime);
 printf "min/max/avg = %.3g/%.3g/%.3g ms\n",
 	$min, $max, $avg;
