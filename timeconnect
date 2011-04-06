@@ -88,8 +88,8 @@ while (!defined $option->{count} || $i < $option->{count}){
 	if($connstat == 0){
 		$totalwait = $totalwait + $elapsed;
 		$received++;
-		if($elapsed < $min || $i == 2){ $min = $elapsed; };
-		if($elapsed > $max || $i == 2){ $max = $elapsed; };
+		if($elapsed < $min || $min == 0){ $min = $elapsed; };
+		if($elapsed > $max ){ $max = $elapsed; };
 	};
 
 	# easily allow only one probe per second
