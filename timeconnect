@@ -34,7 +34,6 @@ if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 my $repeat = 0;
 if(!defined $option->{count}){
 	$repeat = 1;
-	$option->{count} = 1;
 };
 
 my $rem_host = $ARGV[0];
@@ -97,7 +96,7 @@ while (!defined $option->{count} || $i < $option->{count}){
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay prompt
-	if ($i < $option->{count} || $repeat == 1){
+	if (!defined $option->{count} || $i < $option->{count}){
 		if ($elapsed < $option->{interval}) {
 			Time::HiRes::sleep($option->{interval}-$elapsed);
 		};
