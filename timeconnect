@@ -21,20 +21,15 @@ my $option={
 	port => 80
 };
 GetOptions($option,
-	"help|h|?",
-	"man",
-	"count|c=i",
-	"interval|i=i",
-	"port|p=i"
+	'help|h|?',
+	'man',
+	'count|c=i',
+	'interval|i=i',
+	'port|p=i'
 ) or pod2usage(2);
 if($option->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
 if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
-
-my $repeat = 0;
-if(!defined $option->{count}){
-	$repeat = 1;
-};
 
 my $rem_host = $ARGV[0];
 
@@ -63,10 +58,19 @@ my $received = 0;
 my $min = 0;
 my $max = 0;
 
+sub sigint {
+	$option->{count} = 1;
+};
+$SIG{INT}=\&sigint;
+
 my $runstarttime = time;
 my $i = 0;
 while (!defined $option->{count} || $i < $option->{count}){
 	my $time1 = Time::HiRes::time;
+	
+	printf "%s %s:%d\t%s\t",
+		"". localtime time, $rem_host, $option->{port},
+		inet_ntoa($iaddr);
 
 	my $connstat = checkconnect();
 
@@ -75,14 +79,10 @@ while (!defined $option->{count} || $i < $option->{count}){
 	my $elapsed = Time::HiRes::time - $time1;
 	my $milliseconds = $elapsed*1000;
 
-	printf "%s %s:%d\t%s\t",
-		"". localtime time, $rem_host, $option->{port},
-		inet_ntoa($iaddr);
 	given($connstat) {
-		when 0 { printf "%.3g ms\n", $milliseconds;}
-		when 1 { print "socket error\n";}
-		when 2 { print "connect error\n";}
-		else { print "script error\n";}
+		when (0) { printf "%.3g ms\n", $milliseconds;}
+		when (1) { print "socket error\n";}
+		when (2) { print "connect error\n";}
 	};
 
 	if($connstat == 0){
@@ -96,10 +96,8 @@ while (!defined $option->{count} || $i < $option->{count}){
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay prompt
-	if (!defined $option->{count} || $i < $option->{count}){
-		if ($elapsed < $option->{interval}) {
-			Time::HiRes::sleep($option->{interval}-$elapsed);
-		};
+	if ($elapsed < $option->{interval}) {
+		Time::HiRes::sleep($option->{interval}-$elapsed);
 	};
 };
 
@@ -112,7 +110,7 @@ $max = 1000*$max; # milliseconds
 print "--- $rem_host timeconnect statistics ---\n";
 printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
 	$i, $received, $pcfail, ($runstoptime - $runstarttime);
-printf "min/max/avg = %.3g/%.3g/%.3g ms\n",
+printf "min/max/avg = %.3g/%.4g/%.3g ms\n",
 	$min, $max, $avg;
 
 0;
