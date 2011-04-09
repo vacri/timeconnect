@@ -63,12 +63,17 @@ sub sigint {
 };
 $SIG{INT}=\&sigint;
 
+# 'make it look more like ping', but really to gobble up the new 
+# prepended \n in the main printf on the first run
+printf "TIMECONNECT %s (%s)", $rem_host, inet_ntoa($iaddr);
+if (defined $option->{count}){print " for $option->{count} attempts"};
+
 my $runstarttime = time;
 my $i = 0;
 while (!defined $option->{count} || $i < $option->{count}){
 	my $time1 = Time::HiRes::time;
 	
-	printf "%s %s:%d\t%s\t",
+	printf "\n%s %s:%d\t%s\t",
 		"". localtime time, $rem_host, $option->{port},
 		inet_ntoa($iaddr);
 
@@ -80,9 +85,9 @@ while (!defined $option->{count} || $i < $option->{count}){
 	my $milliseconds = $elapsed*1000;
 
 	given($connstat) {
-		when (0) { printf "%.3g ms\n", $milliseconds;}
-		when (1) { print "socket error\n";}
-		when (2) { print "connect error\n";}
+		when (0) { printf "%.3g ms", $milliseconds;}
+		when (1) { print "socket error";}
+		when (2) { print "connect error";}
 	};
 
 	if($connstat == 0){
@@ -107,7 +112,7 @@ my $avg = 1000*($totalwait / $i);
 my $pcfail = 100*(($i-$received) / $i);
 $min = 1000*$min; # milliseconds
 $max = 1000*$max; # milliseconds
-print "--- $rem_host timeconnect statistics ---\n";
+print "\n--- $rem_host timeconnect statistics ---\n";
 printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
 	$i, $received, $pcfail, ($runstoptime - $runstarttime);
 printf "min/max/avg = %.3g/%.4g/%.3g ms\n",
