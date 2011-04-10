@@ -42,11 +42,11 @@ my $fh    = FileHandle->new;
 sub checkconnect{
 	# check for local socket
 	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-		return 1;
+		return -1;
 	}
 	# check for remote socket
 	if (!connect($fh, $paddr)) {
-		return 2;
+		return -2;
 	}
 	close $fh;
 	return 0;
@@ -79,19 +79,19 @@ while (!defined $option->{count} || $i < $option->{count}){
 
 	my $connstat = checkconnect();
 
-	$fh->autoflush(1);
+	# $fh->autoflush(1);
 
 	my $elapsed = Time::HiRes::time - $time1;
 	my $milliseconds = $elapsed*1000;
 
 	given($connstat) {
 		when (0) { printf "%.3g ms", $milliseconds;}
-		when (1) { print "socket error";}
-		when (2) { print "connect error";}
+		when (-1) { print "socket error";}
+		when (-2) { print "connect error";}
 	};
 
 	if($connstat == 0){
-		$totalwait = $totalwait + $elapsed;
+		$totalwait += $elapsed;
 		$received++;
 		if($elapsed < $min || $min == 0){ $min = $elapsed; };
 		if($elapsed > $max ){ $max = $elapsed; };
