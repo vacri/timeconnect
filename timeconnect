@@ -18,7 +18,7 @@ use Switch 'Perl 6';
 
 my $option={
 	interval => 1,
-	port => 80
+	port => 80,
 };
 GetOptions($option,
 	'help|h|?',
@@ -68,8 +68,7 @@ sub checkconnect{
 	return 0;
 };
 
-#print statistics
-sub statistics{
+sub printstats{
 	$stats->{runstoptime} = time;
 	my $milliavg = 1000*($stats->{totalwait} / $stats->{attempts});
 	my $percentfail = 100*(($stats->{attempts} - $stats->{received}) / $stats->{attempts});
@@ -90,6 +89,13 @@ sub sigint {
 	return;
 };
 $SIG{INT}=\&sigint;
+
+sub sigtstp {
+	printstats();
+	return;
+};
+$SIG{TSTP}=\&sigtstp;
+
 
 # Heading to 'make it look more like ping', but really to gobble up the new 
 # prepended \n in the main printf on the first run
@@ -138,9 +144,10 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	if ($elapsed < $option->{interval}) {
 		Time::HiRes::sleep($option->{interval}-$elapsed);
 	};
+
 };
 
-statistics();
+printstats();
 
 0;
 __END__
