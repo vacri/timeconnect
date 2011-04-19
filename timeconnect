@@ -60,6 +60,7 @@ my $max = 0;
 
 sub sigint {
 	$option->{count} = 1;
+	return;
 };
 $SIG{INT}=\&sigint;
 
