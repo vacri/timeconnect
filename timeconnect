@@ -190,7 +190,7 @@ Timeconnect takes the following arguments:
 
 =item B<CTRL-C / SIGINT> Prints statistics and ends the program
 
-=item B<CTRL-D / SIGTSTP> Prints statistics but leaves the program running
+=item B<CTRL-Z / SIGTSTP> Prints statistics but leaves the program running
 
 =head1 AUTHOR
 
