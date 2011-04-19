@@ -32,39 +32,6 @@ if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
 if(!defined $ARGV[0]){pod2usage(-exitstatus => 0, -verbose => 0)};
 $option->{host} = $ARGV[0];
 
-$OUTPUT_AUTOFLUSH=1;
-
-my $iaddr = inet_aton($option->{host});
-my $paddr = sockaddr_in($option->{port}, $iaddr);
-my $proto = getprotobyname('tcp');
-my $fh    = FileHandle->new;
-
-sub checkconnect{
-	# check for local socket
-	if (!socket($fh, PF_INET, SOCK_STREAM, $proto)) {
-		return -1;
-	}
-	# check for remote socket
-	if (!connect($fh, $paddr)) {
-		return -2;
-	}
-	close $fh;
-	return 0;
-};
-
-
-sub sigint {
-	$option->{count} = 1;
-	return;
-};
-$SIG{INT}=\&sigint;
-
-# 'make it look more like ping', but really to gobble up the new 
-# prepended \n in the main printf on the first run
-printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($iaddr);
-if (defined $option->{count}){print " for $option->{count} attempts"};
-
-# Statistics vars
 my $stats={
 	totalwait => 0, 
 	received => 0,
@@ -73,13 +40,71 @@ my $stats={
 	attempts => 0
 };
 
+$OUTPUT_AUTOFLUSH=1;
+
+#my $iaddr = inet_aton($option->{host});
+#my $paddr = sockaddr_in($option->{port}, $iaddr);
+#my $proto = getprotobyname('tcp');
+my $fh    = FileHandle->new;
+
+# can't be defined all in one command in the same way as $options above
+# ($options uses numbers only) as 'getprotobyname' returns a string 'tcp'
+# rather than a number when called that way and the declaration for
+# paddr calls $dest and so needs for it to already be defined
+my $dest->{iaddr} = inet_aton($option->{host});
+$dest->{paddr} = sockaddr_in($option->{port}, $dest->{iaddr});
+$dest->{proto} = getprotobyname('tcp');
+
+sub checkconnect{
+	# check for local socket
+	if (!socket($fh, PF_INET, SOCK_STREAM, $dest->{proto})) {
+		return -1;
+	}
+	# check for remote socket
+	if (!connect($fh, $dest->{paddr})) {
+		return -2;
+	}
+	close $fh;
+	return 0;
+};
+
+#print statistics
+sub statistics{
+	$stats->{runstoptime} = time;
+	my $milliavg = 1000*($stats->{totalwait} / $stats->{attempts});
+	my $percentfail = 100*(($stats->{attempts} - $stats->{received}) / $stats->{attempts});
+	my $millimin = 1000*$stats->{min}; # milliseconds
+	my $millimax = 1000*$stats->{max}; # milliseconds
+	print "\n--- $option->{host} timeconnect statistics ---\n";
+	printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
+		$stats->{attempts}, $stats->{received}, $percentfail, 
+		($stats->{runstoptime} - $stats->{runstarttime});
+	printf "min/max/avg = %.2f/%.2f/%.2f ms\n",
+		$millimin, $millimax, $milliavg;
+	return;
+};
+
+# ctrl+c ends run early, finishes while loop on current run
+sub sigint {
+	$option->{count} = 1;
+	return;
+};
+$SIG{INT}=\&sigint;
+
+# Heading to 'make it look more like ping', but really to gobble up the new 
+# prepended \n in the main printf on the first run
+printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($dest->{iaddr});
+if (defined $option->{count}){print " for $option->{count} attempts"};
+
+#main loop
 $stats->{runstarttime} = time;
 while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
-	my $time1 = Time::HiRes::time;
 	
 	printf "\n%s %s:%d\t%s\t",
 		"". localtime time, $option->{host}, $option->{port},
-		inet_ntoa($iaddr);
+		inet_ntoa($dest->{iaddr});
+
+	my $time1 = Time::HiRes::time;
 
 	my $connstat = checkconnect();
 
@@ -115,18 +140,7 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	};
 };
 
-# print end-of-run statistics
-$stats->{runstoptime} = time;
-my $milliavg = 1000*($stats->{totalwait} / $stats->{attempts});
-my $percentfail = 100*(($stats->{attempts} - $stats->{received}) / $stats->{attempts});
-my $millimin = 1000*$stats->{min}; # milliseconds
-my $millimax = 1000*$stats->{max}; # milliseconds
-print "\n--- $option->{host} timeconnect statistics ---\n";
-printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
-	$stats->{attempts}, $stats->{received}, $percentfail, 
-	($stats->{runstoptime} - $stats->{runstarttime});
-printf "min/max/avg = %.2f/%.2f/%.2f ms\n",
-	$millimin, $millimax, $milliavg;
+statistics();
 
 0;
 __END__
