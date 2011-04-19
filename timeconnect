@@ -52,11 +52,6 @@ sub checkconnect{
 	return 0;
 };
 
-# Statistics vars
-my $totalwait = 0;
-my $received = 0;
-my $min = 0;
-my $max = 0;
 
 sub sigint {
 	$option->{count} = 1;
@@ -69,9 +64,17 @@ $SIG{INT}=\&sigint;
 printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($iaddr);
 if (defined $option->{count}){print " for $option->{count} attempts"};
 
-my $runstarttime = time;
-my $i = 0;
-while (!defined $option->{count} || $i < $option->{count}){
+# Statistics vars
+my $stats={
+	totalwait => 0, 
+	received => 0,
+	min => 0,
+	max => 0,
+	attempts => 0
+};
+
+$stats->{runstarttime} = time;
+while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	my $time1 = Time::HiRes::time;
 	
 	printf "\n%s %s:%d\t%s\t",
@@ -92,32 +95,38 @@ while (!defined $option->{count} || $i < $option->{count}){
 	};
 
 	if($connstat == 0){
-		$totalwait += $elapsed;
-		$received++;
-		if($elapsed < $min || $min == 0){ $min = $elapsed; };
-		if($elapsed > $max ){ $max = $elapsed; };
+		$stats->{totalwait} += $elapsed;
+		$stats->{received}++;
+		if($elapsed < $stats->{min} || $stats->{min} == 0){ 
+			$stats->{min} = $elapsed;
+		};
+		if($elapsed > $stats->{max} ){ 
+			$stats->{max} = $elapsed; 
+		};
 	};
 
-	$i++;
+	$stats->{attempts}++;
 
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay prompt
+	# (last item nowait currently disabled)
 	if ($elapsed < $option->{interval}) {
 		Time::HiRes::sleep($option->{interval}-$elapsed);
 	};
 };
 
 # print end-of-run statistics
-my $runstoptime = time;
-my $avg = 1000*($totalwait / $i);
-my $pcfail = 100*(($i-$received) / $i);
-$min = 1000*$min; # milliseconds
-$max = 1000*$max; # milliseconds
+$stats->{runstoptime} = time;
+my $milliavg = 1000*($stats->{totalwait} / $stats->{attempts});
+my $percentfail = 100*(($stats->{attempts} - $stats->{received}) / $stats->{attempts});
+my $millimin = 1000*$stats->{min}; # milliseconds
+my $millimax = 1000*$stats->{max}; # milliseconds
 print "\n--- $option->{host} timeconnect statistics ---\n";
 printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
-	$i, $received, $pcfail, ($runstoptime - $runstarttime);
+	$stats->{attempts}, $stats->{received}, $percentfail, 
+	($stats->{runstoptime} - $stats->{runstarttime});
 printf "min/max/avg = %.2f/%.2f/%.2f ms\n",
-	$min, $max, $avg;
+	$millimin, $millimax, $milliavg;
 
 0;
 __END__
