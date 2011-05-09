@@ -96,14 +96,14 @@ $SIG{TSTP}=\&sigtstp;
 
 # Heading to 'make it look more like ping', but really to gobble up the new 
 # prepended \n in the main printf on the first run
-printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($dest->{iaddr});
+printf "TIMECONNECT %s (%s)\n", $option->{host}, inet_ntoa($dest->{iaddr});
 if (defined $option->{count}){print " for $option->{count} attempts"};
 
 #main loop
 $stats->{runstarttime} = time;
 while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	
-	printf "\n%s %s:%d\t%s\t",
+	printf "%s %s:%d\t%s\t",
 		"". localtime time, $option->{host}, $option->{port},
 		inet_ntoa($dest->{iaddr});
 
@@ -121,6 +121,7 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 		when (-1) { print "socket error";}
 		when (-2) { print "connect error";}
 	};
+	print "\n";
 
 	if($connstat == 0){
 		$stats->{totalwait} += $elapsed;
