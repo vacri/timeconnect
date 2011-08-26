@@ -86,14 +86,6 @@ sub sigint {
 };
 $SIG{INT}=\&sigint;
 
-# ctrl+z prints stats but doesn't stop the script
-sub sigtstp {
-	printstats();
-	return;
-};
-$SIG{TSTP}=\&sigtstp;
-
-
 # Heading to 'make it look more like ping', but really to gobble up the new 
 # prepended \n in the main printf on the first run
 printf "TIMECONNECT %s (%s)\n", $option->{host}, inet_ntoa($dest->{iaddr});
