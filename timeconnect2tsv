@@ -1,0 +1,77 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+#
+# Read in one (or more) timeconnect log files and generate a nice, graphable
+# tab separated output
+#
+
+use Date::Manip::Date;
+use Data::Dumper;
+
+print "#column 1 time\n";
+print "#column 2 samplenr\n";
+print "#column 3 latency\n";
+print "#column 4 failed\n";
+
+my $date = new Date::Manip::Date;
+my $last = {};
+my $total = {};
+$total->{count}=0;
+$total->{max}=0;
+$total->{min}=4000000000;
+while(<>) {
+	chomp;
+
+	if (m/^TIMECONNECT/) {
+		#TIMECONNECT localhost (127.0.0.1)
+		print "#$_\n";
+	} elsif (m/^(.+ .+ .+ .+ .+) ([^\t]+)\t([^\t]+)\t([0-9.]+) ms/) {
+		#Fri Aug 26 10:12:48 2011 localhost:80   127.0.0.1       0.219 ms
+		my $e = {};
+		$date->parse($1);
+		$e->{time} = $date->secs_since_1970_GMT();
+		$e->{dest} = $2;
+		$e->{ipaddr} = $3;
+		$e->{sec} = $4/1000;
+
+		if (!defined $last->{ipaddr}) {
+			$last->{ipaddr} = $e->{ipaddr};
+		}
+		if (!defined $last->{time}) {
+			$last->{time}=$e->{time}-1;
+		}
+
+		if ($e->{ipaddr} ne $last->{ipaddr}) {
+			print "#New IPADDR=",$e->{ipaddr},"\n";
+			$last->{ipaddr} = $e->{ipaddr};
+		}
+		$e->{failed} = int($e->{time}+$e->{sec}) - $last->{time}-1;
+		$last->{time}=$e->{time};
+
+		$total->{count}++;
+		$total->{sec}+=$e->{sec};
+		$total->{failed}+=$e->{failed};
+		if ($e->{time} > $total->{max}) {
+			$total->{max} = $e->{time};
+		}
+		if ($e->{time} < $total->{min}) {
+			$total->{min} = $e->{time};
+		}
+
+		print join("\t",
+			$e->{time},$total->{count},$e->{sec},$e->{failed}
+		),"\n";
+	}
+#^C
+#--- localhost timeconnect statistics ---
+#1 attempts, 1 connects, 0% failed, 0 sec total run time
+#min/max/avg = 0.22/0.22/0.22 ms
+	
+}
+
+print ("#elapsed ",$total->{max}-$total->{min},"\n");
+print ("#count ",$total->{count},"\n");
+print ("#failed ",$total->{failed},"\n");
+print ("#latency ",$total->{sec},"\n");
+print ("#average ",$total->{sec}/$total->{count},"\n");
