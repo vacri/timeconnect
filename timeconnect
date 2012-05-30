@@ -167,9 +167,9 @@ timeconnect - times connections to TCP socket
 
 =head1 USAGE
 
-timeconnect [--help] [--man] [--count X] [--interval X] [--port X] destination
+timeconnect [--help] [--man] [--tsv] [--count X] [--interval X] [--port X] destination
 
-timeconnect [-h] [-c X] [-i X] [-p X] destination 
+timeconnect [-h] [-t] [-c X] [-i X] [-p X] destination 
 
 timeconnect -c 20 -i 3 -p 80 192.168.1.1
 
@@ -195,6 +195,8 @@ Timeconnect takes the following arguments:
 
 =item B<--port, -p> Sets the destination port to use. If this value is not specificed, timeconnect will default to a port of 80 (standard http)
 
+=item B<--tsv, -t> Sets the output to tab separated variable mode, suitable for graphing. The columns in this mode are: time sent (in epoch time), time elapsed for connection (in milliseconds), number of attempts, number of successful returns, fail code. The columns for both time elapsed and fail code will report -1 for a local socket error and -2 for a connect error.
+
 =back
 
 =head1 INTERRUPTS
@@ -203,7 +205,7 @@ Timeconnect takes the following arguments:
 
 =item B<CTRL-C / SIGINT> Prints statistics and ends the program
 
-=item B<CTRL-Z / SIGTSTP> Prints statistics but leaves the program running
+=back
 
 =head1 AUTHOR
 
