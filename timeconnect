@@ -150,7 +150,7 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 			when (-1) { print "-1"; $failtype = -1;}
 			when (-2) { print "-2"; $failtype = -2;}
 		};
-		printf "\t%s\t%s\t%d", "". $stats->{attempts},
+		printf "\t%i\t%i\t%i\t%i", $stats->{attempts},
 			$stats->{received}, $stats->{failed}, $failtype;
 	}else{
 		given($connstat) {
