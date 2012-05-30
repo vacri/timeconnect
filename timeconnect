@@ -87,8 +87,7 @@ sub sigint {
 };
 $SIG{INT}=\&sigint;
 
-# Heading to 'make it look more like ping', but really to gobble up the new 
-# prepended \n in the main printf on the first run. Not printed in tsv
+# Heading to 'make it look more like ping', ignored in tsv 
 if (!defined $option->{tsv}){
 		printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($dest->{iaddr});
 		if (defined $option->{count}){print " for $option->{count} attempts";};
@@ -110,8 +109,6 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	my $time1 = Time::HiRes::time;
 
 	my $connstat = checkconnect();
-
-	# $fh->autoflush(1);
 
 	my $elapsed = Time::HiRes::time - $time1;
 	my $milliseconds = $elapsed*1000;
@@ -146,7 +143,7 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	};
 	print "\n";
 
-	# easily allow only one probe per second
+	# easily allow only one probe per interval
 	# last iteration of a limited run should not delay prompt
 	# (last item nowait currently disabled)
 	if ($elapsed < $option->{interval}) {
