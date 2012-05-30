@@ -25,7 +25,8 @@ GetOptions($option,
 	'man',
 	'count|c=i',
 	'interval|i=i',
-	'port|p=i'
+	'port|p=i',
+	'tsv|t'
 ) or pod2usage(2);
 if($option->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
@@ -87,17 +88,24 @@ sub sigint {
 $SIG{INT}=\&sigint;
 
 # Heading to 'make it look more like ping', but really to gobble up the new 
-# prepended \n in the main printf on the first run
-printf "TIMECONNECT %s (%s)\n", $option->{host}, inet_ntoa($dest->{iaddr});
-if (defined $option->{count}){print " for $option->{count} attempts"};
+# prepended \n in the main printf on the first run. Not printed in tsv
+if (!defined $option->{tsv}){
+		printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($dest->{iaddr});
+		if (defined $option->{count}){print " for $option->{count} attempts";};
+		print "\n";
+};
 
 #main loop
 $stats->{runstarttime} = time;
 while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	
-	printf "%s %s:%d\t%s\t",
+	if (defined $option->{tsv}){
+		printf "%s", "". time;
+	}else{
+		printf "%s %s:%d\t%s\t",
 		"". localtime time, $option->{host}, $option->{port},
 		inet_ntoa($dest->{iaddr});
+	};
 
 	my $time1 = Time::HiRes::time;
 
@@ -107,13 +115,6 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 
 	my $elapsed = Time::HiRes::time - $time1;
 	my $milliseconds = $elapsed*1000;
-
-	given($connstat) {
-		when (0) { printf "%.3g ms", $milliseconds;}
-		when (-1) { print "socket error";}
-		when (-2) { print "connect error";}
-	};
-	print "\n";
 
 	if($connstat == 0){
 		$stats->{totalwait} += $elapsed;
@@ -128,6 +129,23 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 
 	$stats->{attempts}++;
 
+	if (defined $option->{tsv}){
+		my $failtype = 0;
+		given($connstat) {
+			when (0) { printf "\t%.3g", "". $milliseconds;}
+			when (-1) { print "\t-1"; $failtype = -1;}
+			when (-2) { print "\t-2"; $failtype = -2;}
+		};
+		printf "\t%s\t%s\t%d", "". $stats->{attempts}, $stats->{received}, $failtype; 
+	}else{
+		given($connstat) {
+			when (0) { printf "%.3g ms", $milliseconds;}
+			when (-1) { print "socket error";}
+			when (-2) { print "connect error";}
+		};
+	};
+	print "\n";
+
 	# easily allow only one probe per second
 	# last iteration of a limited run should not delay prompt
 	# (last item nowait currently disabled)
@@ -137,7 +155,9 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 
 };
 
-printstats();
+if (!defined $option->{tsv}){
+	printstats();
+};
 
 0;
 __END__
