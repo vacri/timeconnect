@@ -94,7 +94,7 @@ $SIG{INT}=\&sigint;
 if ($option->{tsv}) {
 	# heading to self-describe this tsv file
 	printf "#column 1 time\n";
-	printf "#column 2 latency\n";
+	printf "#column 2 seconds\n";
 	printf "#column 3 attempts\n";
 	printf "#column 4 successes\n";
 	printf "#column 5 failures\n";
@@ -146,7 +146,7 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	if (defined $option->{tsv}){
 		my $failtype = 0;
 		given($connstat) {
-			when (0) { printf "%.3g", $milliseconds;}
+			when (0) { printf "%.3g", $milliseconds/1000;}
 			when (-1) { print "-1"; $failtype = -1;}
 			when (-2) { print "-2"; $failtype = -2;}
 		};
