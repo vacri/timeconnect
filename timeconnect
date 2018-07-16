@@ -14,7 +14,6 @@ use Getopt::Long;
 use Pod::Usage;
 use Carp;
 use English qw( -no_match_vars );
-use Switch 'Perl 6';
 
 my $option={
 	interval => 1,
@@ -145,18 +144,22 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 
 	if (defined $option->{tsv}){
 		my $failtype = 0;
-		given($connstat) {
-			when (0) { printf "%.3g", $milliseconds/1000;}
-			when (-1) { print "-1"; $failtype = -1;}
-			when (-2) { print "-2"; $failtype = -2;}
+                if ($connstat == 0) {
+		    printf "%.3g", $milliseconds/1000;
+                } elsif ($connstat == -1) {
+                    print "-1"; $failtype = -1;
+                } elsif ($connstat == -2) {
+                    print "-2"; $failtype = -2;
 		};
 		printf "\t%i\t%i\t%i\t%i", $stats->{attempts},
 			$stats->{received}, $stats->{failed}, $failtype;
 	}else{
-		given($connstat) {
-			when (0) { printf "%.3g ms", $milliseconds;}
-			when (-1) { print "socket error";}
-			when (-2) { print "connect error";}
+                if ($connstat == 0) {
+                    printf "%.3g ms", $milliseconds;
+                } elsif ($connstat == -1) {
+                    print "socket error";
+                } elsif ($connstat == -2) {
+                    print "connect error";
 		};
 	};
 	print "\n";
