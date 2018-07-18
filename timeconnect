@@ -14,7 +14,6 @@ use Getopt::Long;
 use Pod::Usage;
 use Carp;
 use English qw( -no_match_vars );
-use Switch 'Perl 6';
 
 my $option={
 	interval => 1,
@@ -26,7 +25,7 @@ GetOptions($option,
 	'count|c=i',
 	'interval|i=i',
 	'port|p=i',
-	'tsv|t'
+	'tsv|t',
 ) or pod2usage(2);
 if($option->{help}){pod2usage(-exitstatus => 0, -verbose => 1)};
 if($option->{man}){pod2usage(-exitstatus => 0, -verbose => 2)};
@@ -70,10 +69,14 @@ sub printstats{
 	my $millimin = 1000*$stats->{min}; # milliseconds
 	my $millimax = 1000*$stats->{max}; # milliseconds
 
-	print "\n--- $option->{host} timeconnect statistics ---\n";
+	print "\n";
+	print "#" if ($option->{tsv});
+	print "--- $option->{host} timeconnect statistics ---\n";
+	print "#" if ($option->{tsv});
 	printf "%d attempts, %d connects, %d%% failed, %d sec total run time\n",
 		$stats->{attempts}, $stats->{received}, $percentfail, 
 		($stats->{runstoptime} - $stats->{runstarttime});
+	print "#" if ($option->{tsv});
 	printf "min/max/avg = %.2f/%.2f/%.2f ms\n",
 		$millimin, $millimax, $milliavg;
 
@@ -87,19 +90,30 @@ sub sigint {
 };
 $SIG{INT}=\&sigint;
 
-# Heading to 'make it look more like ping', ignored in tsv 
-if (!defined $option->{tsv}){
-		printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($dest->{iaddr});
-		if (defined $option->{count}){print " for $option->{count} attempts";};
-		print "\n";
-};
+if ($option->{tsv}) {
+	# heading to self-describe this tsv file
+	printf "#column 1 time\n";
+	printf "#column 2 seconds\n";
+	printf "#column 3 attempts\n";
+	printf "#column 4 successes\n";
+	printf "#column 5 failures\n";
+	printf "#column 6 failcode\n";
+	printf "#";
+}
+
+# Heading to 'make it look more like ping'
+printf "TIMECONNECT %s (%s)", $option->{host}, inet_ntoa($dest->{iaddr});
+if (defined $option->{count}){print " for $option->{count} attempts";};
+print "\n";
 
 #main loop
 $stats->{runstarttime} = time;
+$stats->{failed} = 0;
+$stats->{received} = 0;
 while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 	
 	if (defined $option->{tsv}){
-		printf "%s", "". time;
+		print time(),"\t";
 	}else{
 		printf "%s %s:%d\t%s\t",
 		"". localtime time, $option->{host}, $option->{port},
@@ -122,23 +136,30 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 		if($elapsed > $stats->{max} ){ 
 			$stats->{max} = $elapsed; 
 		};
+	} else {
+		$stats->{failed}++;
 	};
 
 	$stats->{attempts}++;
 
 	if (defined $option->{tsv}){
 		my $failtype = 0;
-		given($connstat) {
-			when (0) { printf "\t%.3g", "". $milliseconds;}
-			when (-1) { print "\t-1"; $failtype = -1;}
-			when (-2) { print "\t-2"; $failtype = -2;}
+                if ($connstat == 0) {
+		    printf "%.3g", $milliseconds/1000;
+                } elsif ($connstat == -1) {
+                    print "-1"; $failtype = -1;
+                } elsif ($connstat == -2) {
+                    print "-2"; $failtype = -2;
 		};
-		printf "\t%s\t%s\t%d", "". $stats->{attempts}, $stats->{received}, $failtype; 
+		printf "\t%i\t%i\t%i\t%i", $stats->{attempts},
+			$stats->{received}, $stats->{failed}, $failtype;
 	}else{
-		given($connstat) {
-			when (0) { printf "%.3g ms", $milliseconds;}
-			when (-1) { print "socket error";}
-			when (-2) { print "connect error";}
+                if ($connstat == 0) {
+                    printf "%.3g ms", $milliseconds;
+                } elsif ($connstat == -1) {
+                    print "socket error";
+                } elsif ($connstat == -2) {
+                    print "connect error";
 		};
 	};
 	print "\n";
@@ -152,9 +173,7 @@ while (!defined $option->{count} || $stats->{attempts} < $option->{count}){
 
 };
 
-if (!defined $option->{tsv}){
-	printstats();
-};
+printstats();
 
 0;
 __END__

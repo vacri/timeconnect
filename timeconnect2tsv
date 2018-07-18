@@ -26,7 +26,7 @@ while(<>) {
 	if (m/^TIMECONNECT/) {
 		#TIMECONNECT localhost (127.0.0.1)
 		print "#$_\n";
-	} elsif (m/^(.+ .+ .+ .+ .+) ([^\t]+)\t([^\t]+)\t([0-9.]+) ms/) {
+	} elsif (m/^(.+ .+ .+ .+ .+) ([^\t]+)\t([^\t]+)\t([0-9.e+]+) ms/) {
 		#Fri Aug 26 10:12:48 2011 localhost:80   127.0.0.1       0.219 ms
 		my $e = {};
 		$date->parse($1);
@@ -39,15 +39,15 @@ while(<>) {
 			$last->{ipaddr} = $e->{ipaddr};
 		}
 		if (!defined $last->{time}) {
-			$last->{time}=$e->{time}-1;
+			$last->{time}=int($e->{time}+$e->{sec})-1;
 		}
 
 		if ($e->{ipaddr} ne $last->{ipaddr}) {
 			print "#New IPADDR=",$e->{ipaddr},"\n";
 			$last->{ipaddr} = $e->{ipaddr};
 		}
-		$e->{failed} = int($e->{time}+$e->{sec}) - $last->{time}-1;
-		$last->{time}=$e->{time};
+		$e->{failed} = $e->{time} - $last->{time}-1;
+		$last->{time}=int($e->{time}+$e->{sec});
 
 		$total->{count}++;
 		$total->{sec}+=$e->{sec};
@@ -61,6 +61,41 @@ while(<>) {
 
 		print join("\t",
 			$e->{time},$total->{count},$e->{sec},$e->{failed}
+		),"\n";
+	} elsif (m/^(.+ .+ .+ .+ .+) ([^\t]+)\t([^\t]+)\tconnect error/) {
+		#Tue May 29 16:39:19 2012 git.aconex.com:80      192.168.7.239   connect error
+		my $e = {};
+		$date->parse($1);
+		$e->{time} = $date->secs_since_1970_GMT();
+		$e->{dest} = $2;
+		$e->{ipaddr} = $3;
+
+		if (!defined $last->{ipaddr}) {
+			$last->{ipaddr} = $e->{ipaddr};
+		}
+		if (!defined $last->{time}) {
+			$last->{time}=$e->{time}-1;
+		}
+
+		if ($e->{ipaddr} ne $last->{ipaddr}) {
+			print "#New IPADDR=",$e->{ipaddr},"\n";
+			$last->{ipaddr} = $e->{ipaddr};
+		}
+
+		$e->{failed} = $e->{time} - $last->{time};
+		$last->{time}=$e->{time};
+
+		$total->{count}++;
+		$total->{failed}+=$e->{failed};
+		if ($e->{time} > $total->{max}) {
+			$total->{max} = $e->{time};
+		}
+		if ($e->{time} < $total->{min}) {
+			$total->{min} = $e->{time};
+		}
+
+		print join("\t",
+			$e->{time},0,0,$e->{failed}
 		),"\n";
 	}
 #^C
